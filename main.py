@@ -315,18 +315,18 @@ try:
 						[" " for col in range(widthChar-4)]
 							for row in range(heightChar-1)])
 		# insert frame
-		elif char == "^J" and not terminal:
+		elif char == "^J" and lastchar == "^J" and not terminal:
 			frames.insert(0 if frame == 0 else frame-1, [
 						[" " for col in range(widthChar-4)]
 							for row in range(heightChar-1)])
 			frame -= 1
-		elif char == "^K" and not terminal:
+		elif char == "^K" and lastchar == "^K" and not terminal:
 			frames.insert(-1 if frame == len(frames)-1 else frame+1, [
 						[" " for col in range(widthChar-4)]
 							for row in range(heightChar-1)])
 			frame += 1
 		# duplicate frame
-		elif char == "L" and not terminal:
+		elif char == "L" and lastchar == "^L" and not terminal:
 			frames.insert(frame, frames[frame])
 			frame += 1
 

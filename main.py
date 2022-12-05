@@ -192,7 +192,7 @@ def handleInput(key):
 	if key == b"\x19": return "^Y"	#
 	if key == b"\x1A": return "^Z"	# cursor to left edge
 	if key == b"\x1B": return "^["	# change frame left
-	if key == b"\x1C": return "^\\"	#
+	if key == b"\x1C": return "^\\"	# append frame
 	if key == b"\x1D": return "^]"	# change frame right
 	if key == b"\x1E": return "^^"	#
 	if key == b"\x1F": return "^_"	#
@@ -310,7 +310,7 @@ try:
 		elif char == "^H" and lastchar == "^H" and not terminal:
 			if len(frames) > 1: frames.pop(frame)
 		# append frame
-		elif char == "^K" and lastchar == "^G" and not terminal:
+		elif char == "^\\" and lastchar == "^\\" and not terminal:
 			frames.append([
 						[" " for col in range(widthChar-4)]
 							for row in range(heightChar-1)])

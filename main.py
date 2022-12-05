@@ -1,7 +1,7 @@
 # a kwik n dirty ascii animation program
 # made with catroidvania
 # first created 2 12 22
-# verison 0.1
+# verison 1.0
 
 # based on the makeyourowntexteditor found on viewsourcecode.org
 # but now its python lol
@@ -186,7 +186,7 @@ def handleInput(key):
 	if key == b"\x13": return "^S"	#
 	if key == b"\x14": return "^T"	# toggle terminal mode
 	if key == b"\x15": return "^U"	#
-	if key == b"\x16": return "^V"	# cursor to left edge
+	if key == b"\x16": return "^V"	# cursor to right edge
 	if key == b"\x17": return "^W"	#
 	if key == b"\x18": return "^X"	# cursor to top edge
 	if key == b"\x19": return "^Y"	#

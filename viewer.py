@@ -1,4 +1,5 @@
 # animation veiwer program for veiwscii
+# version 1.0
 
 from time import sleep
 

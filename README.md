@@ -71,6 +71,8 @@ shift right: moves down and twice back
 ^q: quit without saving
 
 
+^\: append frame
+
 ^h: delete current frame
 
 ^j: insert new frame left

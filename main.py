@@ -94,7 +94,7 @@ def drawBuffer(buf, cx, cy, key, lastkey, contents, frame, framecount,
 			# some info
 			title = "{ " + title +\
 				 " | " + str(cx-4) + ":" + str(cy-2) +\
-				 " | " + str(frame) + " / " + str(framecount) + " }"
+				 " | " + str(frame) + "/" + str(framecount) + " }"
 
 			# center align
 			buf[row][1:] = " " * ((width-len(title))//2) +\
@@ -473,7 +473,7 @@ try:
 				cursorx, cursory,
 				char, lastchar,
 				frames[frame], frame+1, len(frames),
-				widthChar, heightChar, title="EDITING : UNTITLED")
+				widthChar, heightChar, title="EDITING")
 
 		# draw the whole buffer
 		drawScreen(unit, buf)

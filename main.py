@@ -363,12 +363,6 @@ try:
 		# tab
 		elif char == "^I":
 			cursorx += 4
-		# bell test
-		elif char == "^G":
-			if terminal:
-				terminalframe[cursory-1][cursorx-4] += "\x09"
-			elif not terminal:
-				frames[frame][cursory-1][cursorx-4] += "\x09"
 		# backspace
 		elif char == "^?":
 			if terminal:

@@ -1,7 +1,7 @@
 # a kwik n dirty ascii animation program
 # made with catroidvania
 # first created 2 12 22
-# verison 1.1
+# verison 1.2
 
 # based on the makeyourowntexteditor found on viewsourcecode.org
 # but now its python lol
@@ -19,62 +19,9 @@ from fcntl import ioctl
 # for storing the ioctl return because this is actually ass
 from struct import pack, unpack
 # time
-from time import time_ns, sleep
+from time import time, sleep
 # random (:
 from random import choice
-
-
-def drawBuffer(buf, cx, cy, key, lastkey, contents, frame, framecount,
-	width=80, height=24, title="CATSCII"):
-
-	# creates the buffer to be returned
-	for row in range(height+1):
-		# skip the clear screen codes
-		if not row: continue
-		# adds a clearline to the start
-		buf[row].insert(0, "\033[K")
-		if row == 1:
-			# titlebar
-
-			# some info
-			title = "{ " + title +\
-				 " | " + str(cx) + ":" + str(cy-2) +\
-				 " | " + str(frame) + "/" + str(framecount) + " }"
-
-			# center align
-			buf[row][1:] = " " * ((width-len(title))//2) +\
-				 title +\
-				 " " * ((width-len(title))//2)
-
-			# keypressed
-		elif row == 2:
-			title = "[ " + lastkey + " ]"
-			buf[row][0:] = "=" * ((width-len(title))//2) + title +\
-				"=" * ((width-len(title))//2)
-		elif row == height:
-			buf[row] = "=" * width
-		else:
-# dont need line numbers
-#			num = str(row-2)
-			# some border decor
-#			if len(num) < 2:
-#				buf[row][1:3] = num + " " * (2 - len(num))
-#			elif len(num) > 2:
-#				buf[row][1:3] = num[-2:]
-#			else:
-#				buf[row][1:3] = num
-#			buf[row][3] = "|"
-			buf[row][1] = "["
-
-			# contents
-			buf[row][2:] = contents[row-2]
-
-		# draw cursor
-		if row == cy: buf[row][cx]= "\033[7m"+contents[row-2][cx]+"\033[0m"
-
-		# moves everything down unless its the last row
-		if row < height - 1: buf[row].append("\r\n")
-	return buf
 
 
 def clearCanvas(width=80, height=24, fillchar=" "):
@@ -278,8 +225,8 @@ def loadAnimation(filename, linesep="@@"):
 # main program code
 try:
 
-	# version inso
-	version = 1.1
+	# version info
+	version = 1.2
 
 	# gets the file number of the terminal this is run in
 	unit = stdin.fileno()
@@ -367,18 +314,31 @@ try:
 	# savig / loading
 
 	# random stuff
-	decorchar = "::"
+	decorchar = ":"
 	#choice(["!", "@", "#", "$", "%", "&", "=", ":"])
+
+	# time stuff
+	previousdt = time()
+
+	# playback
+	playing = False
+	direction = 1
+	framerate = 24
 
 	# main program loop
 	while True:
 
 		# reget window size
+		# still breaks currently lol \\:
 		if resize:
 			terminfo = ioctl(unit, termios.TIOCGWINSZ, pack("HHHH", 0,0,0,0))
 			terminfo = unpack("HHHH", terminfo)
 			heightChar = terminfo[0]
 			widthChar = terminfo[1]
+
+		# get time since last update
+		dt = time() - previousdt
+		previousdt = time()
 
 		# cursor limits
 		cursorxmin = 0
@@ -387,6 +347,7 @@ try:
 		cursorymax = heightChar-1
 
 		# reads at least 1 byte from the standard input
+		# we need to read 4 bytes to account for shift and ctrl shift keys
 		rawchar = os.read(unit, 4)
 		# keeps rawchar in case i need to debug with it
 		char = handleInput(rawchar)
@@ -404,7 +365,6 @@ try:
 		# insert frame
 		elif char == "^J" and lastchar == "^J" and not terminal:
 			frames.insert(frame, clearCanvas(widthChar, heightChar, " "))
-			frame -= 1
 		elif char == "^K" and lastchar == "^K" and not terminal:
 			if len(frames)-1 == frame:
 				frames.append(clearCanvas(widthChar, heightChar, " "))
@@ -424,7 +384,6 @@ try:
 		# move cursor vertically
 		if char == "UPARROW":
 			cursory -= 1
-		# since height is always one row short for some reason
 		elif char == "DOWNARROW":
 			cursory += 1
 		# move cursor horizontally
@@ -432,7 +391,6 @@ try:
 			cursorx += 1
 		elif char == "LEFTARROW":
 			cursorx -= 1
-		# find where the empty string is coming from
 		# offset vertical
 		elif char == "SHIFTUPARROW":
 			cursory -= 1
@@ -459,18 +417,6 @@ try:
 		# tab
 		elif char == "^I":
 			cursorx += 4
-		# backspace
-		elif char == "^?":
-			if terminal:
-				terminalframe[cursory-1][cursorx-1] = " "
-			elif not terminal:
-				frames[frame][cursory-1][cursorx-1] = " "
-			if cursorx == 1: cursory -= 1
-			cursorx -= 1
-		# enter
-		elif char == "^M":
-			cursory += 1
-			cursorx = 0
 		# jump to borders
 		elif char == "^Z":
 			cursorx = cursorxmin
@@ -490,6 +436,23 @@ try:
 			frame -= 1
 		elif char == "^]" and not terminal:
 			frame += 1
+		# toggle playbackmode / edit mode
+		elif char == "^S" and not terminal:
+			if playing:
+				playing = False
+				# use os.read as frame limiter
+				newAttributes[6][termios.VTIME] = 1
+				termios.tcsetattr(unit, termios.TCSAFLUSH, newAttributes)
+			elif not playing:
+				playing = True
+				# use framerate a limiter
+				newAttributes[6][termios.VTIME] = 0
+				termios.tcsetattr(unit, termios.TCSAFLUSH, newAttributes)
+		# jump to start / end frames
+		elif char == "^A" and not terminal:
+			frame = 0
+		elif char == "^D" and not terminal:
+			frame = len(frames)-1
 		# switch to edit mode / terminal mode
 		elif char == "^T":
 			if terminal:
@@ -502,6 +465,7 @@ try:
 				cursorlasty = cursory
 				cursorx = 0
 				cursory = 1
+			playing = False
 		# run command
 		# should move this into a function
 		elif char == "^E":
@@ -517,13 +481,30 @@ try:
 						loaded = loadAnimation(command[1], command[2])
 						loaded = resizeAnimation(loaded, widthChar, heightChar)
 						frames = loaded
+						frame = 0
 						terminalframe[cursory][0:]= "Loaded "+ command[1]+"!"
 					elif command[0].lower() == "help":
 						terminalframe[cursory][0:]= "Not implemented yet lol!"
+					elif command[0].lower() == "playback":
+						framerate = command[1]
+						direction = command[2]
+						terminalframe[cursory][0:]="Playback settings changed!"
 				except Exception as exc:
 					terminalframe[cursory][0:] = str(exc)
+		# backspace
+		elif char == "^?" and not playing:
+			if terminal:
+				terminalframe[cursory-1][cursorx-1] = " "
+			elif not terminal:
+				frames[frame][cursory-1][cursorx-1] = " "
+			if cursorx == cursorxmin: cursory -= 1
+			cursorx -= 1
+		# enter
+		elif char == "^M" and not playing:
+			cursory += 1
+			cursorx = 0
 		# draw if nothing else
-		elif len(char) == 1:
+		elif len(char) == 1 and not playing:
 			if terminal:
 				terminalframe[cursory-1][cursorx] = char[0]
 			elif not terminal:
@@ -552,6 +533,9 @@ try:
 		elif cursorx == cursorxmax+1:
 			cursorx = cursorxmin
 
+		# playback
+		if playing: frame += direction
+
 		# frame move wrap
 		if frame < 0:
 			frame = len(frames) - 1
@@ -563,14 +547,20 @@ try:
 
 		# draw title bar
 		if terminal:
-			editmode = "COMMAND MODE"
+			editmode = "command"
+		elif playing:
+			editmode = "playback"
 		else:
-			editmode = "EDIT MODE"
+			editmode = "edit"
 
-		title = decorchar + "[ CATSCII v" + str(version) + " ][ " +\
-		editmode + " ][ FRAME " + str(frame+1) + "/" + str(len(frames)) +\
-		" ][ CURSOR " + str(cursorx+1) + ":" + str(cursory) +\
-		" ][ " + lastchar + " ]"
+		titlechar = lastchar
+		if len(lastchar) > 1: titlechar = lastchar.lower()
+
+		# overcomplicated title bar
+		title = "%[catscii v" + str(version) + "]=[" +\
+		editmode + "]=[frame " + str(frame+1) + "/" + str(len(frames)) +\
+		"]=[cursor " + str(cursorx+1) + ":" + str(cursory) +\
+		"]=[" + titlechar + "]" #[" + str(round(dt, 4)) + "]"
 		title += "=" * (widthChar-len(title))
 		buf = printToCanvas(buf, 0, 0, title, widthChar)
 
@@ -581,7 +571,7 @@ try:
 			buf = drawToCanvas(buf, 0, 1, frames[frame])
 
 		# draw cursor
-		buf = drawCursor(buf, cursorx, cursory)
+		if not playing:	buf = drawCursor(buf, cursorx, cursory)
 
 # OLD
 		# draw to screen
@@ -600,6 +590,11 @@ try:
 
 		# draw the whole buffer
 		drawScreen(unit, buf)
+
+		# cap framerate
+		if playing:
+			delay = 1/framerate if 1/framerate - dt < 0 else 1/framerate - dt
+			sleep(delay)
 
 #except Exception as exc:
 #	print(exc)

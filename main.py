@@ -1,7 +1,8 @@
 # a kwik n dirty ascii animation program
 # made with catroidvania
 # first created 2 12 22
-# verison 1.2
+# verison 1.3
+# version released 8 12 2022
 
 # based on the makeyourowntexteditor found on viewsourcecode.org
 # but now its python lol
@@ -21,7 +22,7 @@ from struct import pack, unpack
 # time
 from time import time, sleep
 # random (:
-from random import choice
+#from random import choice
 
 
 def clearCanvas(width=80, height=24, fillchar=" "):
@@ -49,9 +50,11 @@ def drawToCanvas(canvas, x, y, content, canvasWidth=None, contentWidth=None):
 		if row > contentHeight: break
 		# so we dont draw off the side
 		if contentWidth > canvasWidth:
-			canvas[row + y][x:] = content[row][:canvasWidth-x]
+			canvas[row+y][x:canvasWidth] = content[row][:canvasWidth-x]
+		elif contentWidth < canvasWidth:
+			canvas[row+y][x:] = content[row] + canvas[row+y][contentWidth+x+1:]
 		else:
-			canvas[row + y][x:] = content[row]
+			canvas[row+y][x:] = content[row]
 
 	return canvas
 
@@ -61,21 +64,27 @@ def printToCanvas(canvas, x, y, string, canvasWidth=None):
 
 	# if none are supplied
 	if not canvasWidth: canvasWidth = len(canvas[0])-1
+	contentWidth = len(string)-1
 
 	# write to buffer row
-
 	# so we dont draw off the edge
-	if len(string) > canvasWidth:
+	if contentWidth > canvasWidth:
 		canvas[y][x:] = string[:canvasWidth-x]
+	elif contentWidth < canvasWidth:
+		canvas[y][x:] = list(string) + canvas[y][contentWidth+x+1:]
 	else:
-		canvas[y][x:] = string
+		canvas[y][x:] = string[:canvasWidth-x]
 
 	return canvas
 
 
-def drawCursor(canvas, x, y):
+def drawCursor(canvas, x, y, blink=False):
 	# draws the cursor as inverted text
-	canvas[y][x] = "\033[7m" + canvas[y][x] + "\033[0m"
+	cursor = "\033[7m" + canvas[y][x] + "\033[0m"
+
+	if blink: cursor = "\033[5m" + cursor
+
+	canvas[y][x] = cursor
 
 	return canvas
 
@@ -101,6 +110,35 @@ def drawScreen(unitno, canvas, height=None):
 		os.write(unitno, stringbuf.encode("utf-8"))
 	except Exception as exc:
 		os.write(unitno, str(exc).encode("utf-8"))
+
+
+def getFromCanvas(canvas, x1, y1, x2, y2, canvasWidth=None):
+	# returns the contents of the bufer from x1, y1 to x2, y2
+	canvasHeight = len(canvas)-1
+	if not canvasWidth: canvasWidth = len(canvas[0])-1
+
+	# ensures the second mark is on the correct row
+	x2 += 1
+	y2 += 1
+
+	# make sure we can actually index the canvas
+	if x1 > x2: x1,x2 = x2,x1
+	if y1 > y2: y1,y2 = y2,y1
+
+	# so no index error; shoulndt even be possible to do lmao
+	if x1 < 0: x1 = 0
+	if y1 < 0: y1 = 0
+	if x2 > canvasWidth: x2 = canvasWidth
+	if y2 > canvasHeight: y2 = canvasHeight
+
+	# get y rows
+	selected = canvas[y1:y2]
+
+	# get x cols
+	for row,line in enumerate(selected):
+		selected[row] = line[x1:x2]
+
+	return selected
 
 
 def handleInput(key):
@@ -130,15 +168,14 @@ def handleInput(key):
 	# ctrl keys
 	# if these are allowed to go through it gives an empty string
 	# may rename these to thier respective ctrl shorthands
-	if key == b"\x00": return "^@"	# null
-	if key == b"\x01": return "^A"	#
+	if key == b"\x00": return "^@"	#
+	if key == b"\x01": return "^A"	# jump to first frame
 	if key == b"\x02": return "^B"	# center cursor horizontally
 	if key == b"\x03": return "^C"	# cursor to bottom edge
-	if key == b"\x04": return "^D"	#
+	if key == b"\x04": return "^D"	# jump to last frame
 	if key == b"\x05": return "^E"	# execute terminal mode command
 	if key == b"\x06": return "^F"	#
 	if key == b"\x07": return "^G"	# bell
-	# backspace doesnt seem to send hex 08 though
 	if key == b"\x08": return "^H"	# delete frame
 	if key == b"\x09": return "^I"	# tab
 	if key == b"\x0A": return "^J"	# insert frame left
@@ -146,24 +183,23 @@ def handleInput(key):
 	if key == b"\x0C": return "^L"	# duplicat frame
 	if key == b"\x0D": return "^M"	# enter
 	if key == b"\x0E": return "^N"	# center cursor vertically
-	if key == b"\x0F": return "^O"	#
-	if key == b"\x10": return "^P"	#
+	if key == b"\x0F": return "^O"	# copy
+	if key == b"\x10": return "^P"	# paste
 	if key == b"\x11": return "^Q"	# quit program without saving
 	if key == b"\x12": return "^R"	#
-	if key == b"\x13": return "^S"	#
+	if key == b"\x13": return "^S"	# toggle playback mode
 	if key == b"\x14": return "^T"	# toggle terminal mode
-	if key == b"\x15": return "^U"	#
+	if key == b"\x15": return "^U"	# set mark 2
 	if key == b"\x16": return "^V"	# cursor to right edge
 	if key == b"\x17": return "^W"	#
 	if key == b"\x18": return "^X"	# cursor to top edge
-	if key == b"\x19": return "^Y"	#
+	if key == b"\x19": return "^Y"	# set mark 1
 	if key == b"\x1A": return "^Z"	# cursor to left edge
 	if key == b"\x1B": return "^["	# change frame left
 	if key == b"\x1C": return "^\\"	# append frame
 	if key == b"\x1D": return "^]"	# change frame right
 	if key == b"\x1E": return "^^"	#
-	if key == b"\x1F": return "^_"	#
-	# this works instead
+	if key == b"\x1F": return "^_"	# cut
 	if key == b"\x7F": return "^?"	# backspace
 
 	# return as the letter if just a character
@@ -184,11 +220,35 @@ def resizeAnimation(project, width, height):
 	return correctsize
 
 
-def saveAnimation(frames, filename=None, width=80, height=24, linesep="@@"):
+def saveAnimation(args):
 	# saving an animation
-	if not filename: filename = "untitled" + str(time_ns()) + ".txt"
-	width = int(width)
-	height = int(height)
+	args += ["","","","",""]
+
+	# param checking
+	if not args[1] or args[1] == " ":
+		frames = [[]]
+	else:
+		frames = args[1]
+
+	if not args[2] or args[2] == " ":
+		filename = "untitled" + str(time_ns()) + ".txt"
+	else:
+		filname = args[2]
+
+	if not args[3] or args[3] == " ":
+		raise ValueError("invalid width parameter!")
+	else:
+		width = int(width)
+
+	if not args[4] or args[4] == " ":
+		raise ValueError("invalid height parameter!")
+	else:
+		height = int(height)
+
+	if not args[5] or args[5] == " ":
+		linesep = "@@"
+	else:
+		linesep = args[5]
 
 	stringframes = ""
 
@@ -204,8 +264,22 @@ def saveAnimation(frames, filename=None, width=80, height=24, linesep="@@"):
 		file.write(stringframes)
 
 
-def loadAnimation(filename, linesep="@@"):
+def loadAnimation(args):
 	# load an animation
+	args += ["",""]
+
+
+	# param checking
+	if not args[1] or args[1] == " ":
+		raise ValueError("filename required!")
+	else:
+		filename = args[1]
+
+	if not args[2] or args[2] == " ":
+		linesep = "@@"
+	else:
+		linesep = args[2]
+
 	with open(filename, "r") as file:
 		contents = []
 		frame = []
@@ -226,7 +300,7 @@ def loadAnimation(filename, linesep="@@"):
 try:
 
 	# version info
-	version = 1.2
+	version = 1.3
 
 	# gets the file number of the terminal this is run in
 	unit = stdin.fileno()
@@ -297,6 +371,12 @@ try:
 	cursorlastx = 1
 	cursorlasty = 1
 
+	# marks
+	markx1 = -1
+	marky1 = -1
+	markx2 = -1
+	marky2 = -1
+
 	# buffer list
 	buf = []
 
@@ -306,6 +386,9 @@ try:
 
 	# save last character
 	lastchar = ""
+
+	# cutbuffer
+	clip = [[]]
 
 	# command interface
 	terminal = False
@@ -324,6 +407,9 @@ try:
 	playing = False
 	direction = 1
 	framerate = 24
+
+	# for the windows users
+	os.system("")
 
 	# main program loop
 	while True:
@@ -474,23 +560,70 @@ try:
 				command = command.split(" ")
 				try:
 					if command[0].lower() == "save":
-						saveAnimation(
-						frames, command[1], command[2], command[3], command[4])
-						terminalframe[cursory][0:]= "Saved "+ command[1]+ "!"
+						command.insert(1, frames)
+						saveAnimation(command)
+						terminalframe = printToCanvas(terminalframe,
+							cursorx, cursory, f"Saved {command[2]}.")
 					elif command[0].lower() == "load":
-						loaded = loadAnimation(command[1], command[2])
+						loaded = loadAnimation(command)
 						loaded = resizeAnimation(loaded, widthChar, heightChar)
 						frames = loaded
 						frame = 0
-						terminalframe[cursory][0:]= "Loaded "+ command[1]+"!"
+						terminalframe = printToCanvas(terminalframe,
+							cursorx, cursory, f"Loaded {command[1]}.")
 					elif command[0].lower() == "help":
-						terminalframe[cursory][0:]= "Not implemented yet lol!"
+						terminalframe = printToCanvas(terminalframe,
+							cursorx, cursory, "Read the README!")
 					elif command[0].lower() == "playback":
-						framerate = command[1]
-						direction = command[2]
-						terminalframe[cursory][0:]="Playback settings changed!"
+						if not command[1] or command[1] == " ":
+							framerate = 24
+						else:
+							framerate = command[1]
+						if not command[2] or command[2] == " ":
+							direction = 1
+						else:
+							direction = command[2]
+						terminalframe = printToCanvas(terminalframe,
+							cursorx, cursory, "Playback settings updated!")
+					elif command[0].lower() == "execute":
+						exec("".join(command[1:]))
+						terminalframe = printToCanvas(terminalframe,
+							cursorx, cursory, "Done.")
 				except Exception as exc:
-					terminalframe[cursory][0:] = str(exc)
+					terminalframe = printToCanvas(terminalframe,
+						cursorx, cursory, str(exc))
+		# set marks
+		elif char == "^Y":
+			markx1 = cursorx
+			marky1 = cursory
+		elif char == "^U":
+			markx2 = cursorx
+			marky2 = cursory
+		# copy
+		elif char == "^O":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				clip = getFromCanvas(frames[frame], markx1, marky1-1, markx2,
+					marky2-1)
+			markx1 = -1
+			marky1 = -1
+			markx2 = -1
+			marky2 = -1
+		# cut
+		elif char == "^_":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				clip = getFromCanvas(frames[frame], markx1, marky1-1, markx2,
+					marky2-1)
+				cut = clearCanvas(len(clip[0]), len(clip), fillchar=" ")
+				frames[frame] = drawToCanvas(frames[frame], markx1, marky1-1,
+					cut)
+			markx1 = -1
+			marky1 = -1
+			markx2 = -1
+			marky2 = -1
+		# paste
+		elif char == "^P":
+			frames[frame] = drawToCanvas(frames[frame], cursorx, cursory-1,
+			clip)
 		# backspace
 		elif char == "^?" and not playing:
 			if terminal:
@@ -572,6 +705,13 @@ try:
 
 		# draw cursor
 		if not playing:	buf = drawCursor(buf, cursorx, cursory)
+
+		# draw marks
+		if markx1 > -1 and marky1 > -1: buf = drawCursor(buf, markx1, marky1,
+			blink=True)
+		if markx2 > -1 and marky2 > -1: buf = drawCursor(buf, markx2, marky2,
+			blink=True)
+
 
 # OLD
 		# draw to screen

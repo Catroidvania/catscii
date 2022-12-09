@@ -1,4 +1,4 @@
-# catscii v1.2
+# catscii v1.3
 
 a terminal based ascii animation editor i made for fun
 
@@ -50,6 +50,17 @@ ctrl shift right: moves right but faster
 ^v: jump cursor to right edge
 
 
+^y: set first mark
+
+^u: set second mark
+
+^o: copy marked content
+
+^_: cut marked content
+
+^p: paste at cursor
+
+
 ^[: go to previous frame
 
 ^]: go to next frame
@@ -70,15 +81,35 @@ ctrl shift right: moves right but faster
 ^q: quit without saving
 
 
-^\: append frame
+^\\: append frame
 
-^h: delete current frame
+^h: delete current fram
 
 ^j: insert new frame left
 
 ^k: insert new frame right
 
 ^l: duplicate current frame
+
+### copy cut paste
+
+as of version 1.3 we have copy, cut and paste!
+
+set the first and second marks to specify a region of text (marks will flash)
+
+note that the while the first and second marks should be at the top left and
+
+bottom right corner, it works in any order but may not include the row
+
+or column the mark itself is on
+
+use their respective hotkeys as seen above to either cut or copy the text
+
+between the set marks
+
+use the paste key to paste the cut/copied content to the cursor location
+
+note that whitespace still gets copied (may be changed in the future)
 
 ### command mode
 
@@ -116,7 +147,9 @@ might happen:
 
 -- command hotkeys
 
--- copy/cut/paste
+-- line / curve / box; draw primatives
+
+-- config file
 
 -- not terrible code (yeah like thatll ever happen)
 

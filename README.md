@@ -143,25 +143,29 @@ which you can set with the playback command
 
 yeah theres gonna be more added if i care to work on this project lol
 
-might happen:
+planned happenings:
+
+v1.4 - drawing primatives (line, curve, ox, circle, triangle)
+
+v1.5 - config file (finally!)
+
+v1.6 - cleanup and optimisation (finally!!!1111!!!1!11!)
+
+v1.7 - TBA (possibly undo / redo)
+
+might happen (some are proabbly better put in its own program):
 
 -- command hotkeys
 
--- line / curve / box; draw primatives
-
--- config file
-
 -- not terrible code (yeah like thatll ever happen)
 
--- onionskin??
+-- onionskin?? (would coincide with color / text formatting)
 
 -- colors (might just save that for a version 2.0)
 
 -- bold/italics/underline etc (might also be saved for a 2.0)
 
 -- mouse support (hmmmmmmmmmmmmmmm)
-
--- tba
 
 ## in other words
 

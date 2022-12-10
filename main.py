@@ -1,7 +1,7 @@
 # a kwik n dirty ascii animation program
 # made with catroidvania
 # first created 2 12 22
-# verison 1.3
+# verison 1.4
 # version released 8 12 2022
 
 # based on the makeyourowntexteditor found on viewsourcecode.org
@@ -23,6 +23,8 @@ from struct import pack, unpack
 from time import time, sleep
 # random (:
 #from random import choice
+# for our drawing functions
+# from math import cos, sin, tan
 
 
 def clearCanvas(width=80, height=24, fillchar=" "):
@@ -141,9 +143,174 @@ def getFromCanvas(canvas, x1, y1, x2, y2, canvasWidth=None):
 	return selected
 
 
+def drawPoints(canvas, points, fillchar="#"):
+	# draws a list of points onto the canvas
+	for point in points:
+		canvas[point[1]][point[0]] = fillchar
+
+	return canvas
+
+
+def fillByChar(canvas, x, y, fillchar="#"):
+	pass
+
+
+def drawLine(canvas, x1, y1, x2, y2, fillchar="#"):
+	# draws a line across the canvas
+	# because we can only draw left to right
+	if x1 > x2:
+		x1,x2 = x2,x1
+		y1,y2 = y2,y1
+
+	points = []
+	point = 0
+
+	# god this code feels so bad
+	# why is linear equations the hardest thing ive ever done???
+	if not (x2 - x1):
+		height = max(y2, y1) - min(y1, y2)
+		facing = -1 if y1 > y2 else 1
+		while point <= height:
+			points.append((x1, (point*facing)+y1))
+			point += 1
+	elif not (y2 - y1):
+		width = max(x2, x1) - min(x1, x2)
+		facing = -1 if y1 > y2 else 1
+		while point <= width:
+			points.append(((point*facing)+x1, y1))
+			point += 1
+	else:
+		width = x2 - x1
+		height = y2 - y1
+		slope = height / width
+		prescision = 1/max(width, height)
+
+		while point <= width:
+			points.append((round(point)+x1, round(slope*point)+y1))
+			point += prescision
+
+	canvas = drawPoints(canvas, points, fillchar)
+	return canvas
+	# and to think there is most certainly a library for all of this
+
+
+def drawBox(canvas, x1, y1, x2, y2, fillchar="#"):
+	# draws a buncha lines that make a box
+	canvas = drawLine(canvas, x1, y1, x1, y2, fillchar=fillchar)  # left
+	canvas = drawLine(canvas, x1, y1, x2, y1, fillchar=fillchar)  # top
+	canvas = drawLine(canvas, x2, y1, x2, y2, fillchar=fillchar)  # right
+	canvas = drawLine(canvas, x1, y2, x2, y2, fillchar=fillchar)  # bottom
+
+	return canvas
+
+
+def drawSolidBox(canvas, x1, y1, x2, y2, fillchar="#"):
+	pass
+
+
+def drawTriangle(canvas, x1, y1, x2, y2, x3, y3, fillchar="#"):
+	# draw triangle witha buncha lines
+	canvas = drawLine(canvas, x1, y1, x2, y2, fillchar=fillchar)
+	canvas = drawLine(canvas, x2, y2, x3, y3, fillchar=fillchar)
+	canvas = drawLine(canvas, x1, y1, x3, y3, fillchar=fillchar)
+
+	return canvas
+
+
+def drawCurve(canvas, x1,y1, x2,y2, x3,y3, t, prescision=0.01, fillchar="#"):
+	# draws a bezier curve based on the mark and cursor position
+
+	if x1 > x2 :
+		x1,x2 = x2,x1
+		y1,y2 = y2,y1
+
+	points = []
+	t = 0
+
+	while t <= 1:
+		points.append(
+			(round(quadBezierCurve(x1, x3, x2, t)),
+			round(quadBezierCurve(y1, y3, y2, t))))
+
+		t += prescision
+
+	canvas = drawPoints(canvas, points, fillchar)
+	return canvas
+
+
+def quadBezierCurve(p1, p2, p3, t):
+	# quick helper function for doing the bezier math
+	return ((1-t)**2)*p1 + 2*(1-t)*t*p2 + (t**2)*p3
+
+
+def cubicBezierCurve(p1, p2, p3, p4, t):
+	# another helper function for drawing circles because i cannot
+	# figure out how to graph ellipses lmao
+	# not even sure if this is needed
+	return ((1-t)**3)*p1 + 3*((1-t)**2)*t*p2 + 3*(1-t)*(t**2)*p3 + (t**3)*p4
+
+
+def drawElipse(canvas, x1, y1, x2, y2, prescision=0.01, fillchar="#"):
+	# draws an ellipse with a set of quadratic bezier curves
+
+	if x1 > x2 :
+		x1,x2 = x2,x1
+		y1,y2 = y2,y1
+
+	points = []
+	t = 0
+
+	# for drawing from box boundries
+	midx = round((max(x1, x2) - min(x1, x2)) / 2 + min(x1, x2))
+	midy = round((max(y1, y2) - min(y1, y2)) / 2 + min(y1, y2))
+
+	# unused for ellipse rotation
+#	a = round((x3 - x1) / 2)
+#	b = round((y3 - y2) / 2)
+
+	while t <= 1:
+
+# with quad bezier; not prefered because it runs more calculations
+# might have to find a better solution later on
+		# top left
+		points.append(
+			(round(quadBezierCurve(x1, x1, midx, t)),
+			round(quadBezierCurve(midy, y1, y1, t))))
+		# top right
+		points.append(
+			(round(quadBezierCurve(midx, x2, x2, t)),
+			round(quadBezierCurve(y1, y1, midy, t))))
+		# bottom right
+		points.append(
+			(round(quadBezierCurve(midx, x2, x2, t)),
+			round(quadBezierCurve(y2, y2, midy, t))))
+		# bottom left
+		points.append(
+			(round(quadBezierCurve(x1, x1, midx, t)),
+			round(quadBezierCurve(midy, y2, y2, t))))
+
+
+# avec cubic bezier; because its cool sounding
+# ellipses do not reach to the top/bottom edge tho :///
+		# top half
+#		points.append(
+#			(round(cubicBezierCurve(x1, x1, x2, x2,  t)),
+#			round(cubicBezierCurve(midy, y1, y1, midy, t))))
+		# bottom half
+#		points.append(
+#			(round(cubicBezierCurve(x1, x1, x2, x2, t)),
+#			round(cubicBezierCurve(midy, y2, y2, midy, t))))
+
+		t += prescision
+
+	canvas = drawPoints(canvas, points, fillchar)
+	return canvas
+
+
 def handleInput(key):
 	# seperates regualr keys from control keys etc
-	# and turns keypresses inso strings
+	# TODO do not have access to all keys like home / end / page up;down etc
+	# and turns keypresses into strings
 	if not key: return ""
 
 	# arrow keys
@@ -168,14 +335,14 @@ def handleInput(key):
 	# ctrl keys
 	# if these are allowed to go through it gives an empty string
 	# may rename these to thier respective ctrl shorthands
-	if key == b"\x00": return "^@"	#
+	if key == b"\x00": return "^@"	# set mark
 	if key == b"\x01": return "^A"	# jump to first frame
 	if key == b"\x02": return "^B"	# center cursor horizontally
 	if key == b"\x03": return "^C"	# cursor to bottom edge
 	if key == b"\x04": return "^D"	# jump to last frame
-	if key == b"\x05": return "^E"	# execute terminal mode command
-	if key == b"\x06": return "^F"	#
-	if key == b"\x07": return "^G"	# bell
+	if key == b"\x05": return "^E"	# draw ellipses
+	if key == b"\x06": return "^F"	# enter terminal mode
+	if key == b"\x07": return "^G"	# execute command
 	if key == b"\x08": return "^H"	# delete frame
 	if key == b"\x09": return "^I"	# tab
 	if key == b"\x0A": return "^J"	# insert frame left
@@ -186,14 +353,14 @@ def handleInput(key):
 	if key == b"\x0F": return "^O"	# copy
 	if key == b"\x10": return "^P"	# paste
 	if key == b"\x11": return "^Q"	# quit program without saving
-	if key == b"\x12": return "^R"	#
+	if key == b"\x12": return "^R"	# draw box
 	if key == b"\x13": return "^S"	# toggle playback mode
-	if key == b"\x14": return "^T"	# toggle terminal mode
-	if key == b"\x15": return "^U"	# set mark 2
+	if key == b"\x14": return "^T"	# draw triangle
+	if key == b"\x15": return "^U"	#
 	if key == b"\x16": return "^V"	# cursor to right edge
-	if key == b"\x17": return "^W"	#
+	if key == b"\x17": return "^W"	# draw line
 	if key == b"\x18": return "^X"	# cursor to top edge
-	if key == b"\x19": return "^Y"	# set mark 1
+	if key == b"\x19": return "^Y"	# draw curve
 	if key == b"\x1A": return "^Z"	# cursor to left edge
 	if key == b"\x1B": return "^["	# change frame left
 	if key == b"\x1C": return "^\\"	# append frame
@@ -300,7 +467,7 @@ def loadAnimation(args):
 try:
 
 	# version info
-	version = 1.3
+	version = 1.4
 
 	# gets the file number of the terminal this is run in
 	unit = stdin.fileno()
@@ -362,6 +529,8 @@ try:
 	terminfo = unpack("HHHH", terminfo)
 	heightChar = terminfo[0]
 	widthChar = terminfo[1]
+	prevWidth = terminfo[0]
+	prevHeight = terminfo[1]
 
 	resize = True
 
@@ -372,6 +541,7 @@ try:
 	cursorlasty = 1
 
 	# marks
+	markexists = False
 	markx1 = -1
 	marky1 = -1
 	markx2 = -1
@@ -394,12 +564,6 @@ try:
 	terminal = False
 	terminalframe = clearCanvas(widthChar, heightChar, " ")
 
-	# savig / loading
-
-	# random stuff
-	decorchar = ":"
-	#choice(["!", "@", "#", "$", "%", "&", "=", ":"])
-
 	# time stuff
 	previousdt = time()
 
@@ -416,11 +580,16 @@ try:
 
 		# reget window size
 		# still breaks currently lol \\:
+		# even in 1.4 it is still busted
 		if resize:
 			terminfo = ioctl(unit, termios.TIOCGWINSZ, pack("HHHH", 0,0,0,0))
 			terminfo = unpack("HHHH", terminfo)
 			heightChar = terminfo[0]
 			widthChar = terminfo[1]
+			if heightChar != prevHeight or widthChar != prevWidth:
+				prevWidth = terminfo[0]
+				prevHeight = terminfo[1]
+				frames = resizeAnimation(frames, widthChar, heightChar)
 
 		# get time since last update
 		dt = time() - previousdt
@@ -478,27 +647,27 @@ try:
 		elif char == "LEFTARROW":
 			cursorx -= 1
 		# offset vertical
-		elif char == "SHIFTUPARROW":
+		elif char == "CTRLSHIFTUPARROW":
 			cursory -= 1
 			cursorx -= 1
-		elif char == "SHIFTDOWNARROW":
+		elif char == "CTRLSHIFTDOWNARROW":
 			cursory += 1
 			cursorx -= 1
 		# offset horizontal
-		elif char == "SHIFTRIGHTARROW":
+		elif char == "CTRLSHIFTRIGHTARROW":
 			cursory += 1
 			cursorx -= 2
-		elif char == "SHIFTLEFTARROW":
+		elif char == "CTRLSHIFTLEFTARROW":
 			cursory -= 1
 			cursorx -= 2
 		# fast movement
-		elif char == "CTRLSHIFTUPARROW":
+		elif char == "SHIFTUPARROW":
 			cursory -= 4
-		elif char == "CTRLSHIFTDOWNARROW":
+		elif char == "SHIFTDOWNARROW":
 			cursory += 4
-		elif char == "CTRLSHIFTRIGHTARROW":
+		elif char == "SHIFTRIGHTARROW":
 			cursorx += 4
-		elif char == "CTRLSHIFTLEFTARROW":
+		elif char == "SHIFTLEFTARROW":
 			cursorx -= 4
 		# tab
 		elif char == "^I":
@@ -540,7 +709,7 @@ try:
 		elif char == "^D" and not terminal:
 			frame = len(frames)-1
 		# switch to edit mode / terminal mode
-		elif char == "^T":
+		elif char == "^F":
 			if terminal:
 				terminal = False
 				cursorx = cursorlastx
@@ -554,7 +723,7 @@ try:
 			playing = False
 		# run command
 		# should move this into a function
-		elif char == "^E":
+		elif char == "^G":
 			if terminal:
 				command = "".join(terminalframe[cursory-1])
 				command = command.split(" ")
@@ -593,12 +762,15 @@ try:
 					terminalframe = printToCanvas(terminalframe,
 						cursorx, cursory, str(exc))
 		# set marks
-		elif char == "^Y":
-			markx1 = cursorx
-			marky1 = cursory
-		elif char == "^U":
-			markx2 = cursorx
-			marky2 = cursory
+		elif char == "^@":
+			if markexists:
+				markx2 = cursorx
+				marky2 = cursory
+				markexists = False
+			else:
+				markx1 = cursorx
+				marky1 = cursory
+				markexists = True
 		# copy
 		elif char == "^O":
 			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
@@ -624,6 +796,57 @@ try:
 		elif char == "^P":
 			frames[frame] = drawToCanvas(frames[frame], cursorx, cursory-1,
 			clip)
+		# drawing tools
+		# draw line
+		elif char == "^W":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				fill = frames[frame][cursory-1][cursorx]
+				frames[frame] = drawLine(frames[frame], markx1, marky1-1,
+					markx2, marky2-1, fillchar=fill)
+				markx1 = -1
+				marky1 = -1
+				markx2 = -1
+				marky2 = -1
+		# draw bezier curve
+		elif char == "^Y":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				fill = frames[frame][cursory-1][cursorx]
+				frames[frame] = drawCurve(frames[frame], markx1, marky1-1,
+				markx2, marky2-1, cursorx, cursory-1, t=1, fillchar=fill)
+				markx1 = -1
+				marky1 = -1
+				markx2 = -1
+				marky2 = -1
+		# draw a hollow rectangle
+		elif char == "^R":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				fill = frames[frame][cursory-1][cursorx]
+				frames[frame] = drawBox(frames[frame], markx1, marky1-1,
+				markx2, marky2-1, fillchar=fill)
+				markx1 = -1
+				marky1 = -1
+				markx2 = -1
+				marky2 = -1
+		# draw triangle
+		elif char == "^T":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				fill = frames[frame][cursory-1][cursorx]
+				frames[frame] = drawTriangle(frames[frame], markx1, marky1-1,
+				markx2, marky2-1, cursorx, cursory-1, fillchar=fill)
+				markx1 = -1
+				marky1 = -1
+				markx2 = -1
+				marky2 = -1
+		# draw elipses
+		elif char == "^E":
+			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
+				fill = frames[frame][cursory-1][cursorx]
+				frames[frame] = drawElipse(frames[frame], markx1, marky1-1,
+				markx2, marky2-1, fillchar=fill)
+				markx1 = -1
+				marky1 = -1
+				markx2 = -1
+				marky2 = -1
 		# backspace
 		elif char == "^?" and not playing:
 			if terminal:
@@ -689,12 +912,30 @@ try:
 		titlechar = lastchar
 		if len(lastchar) > 1: titlechar = lastchar.lower()
 
+		if markx1 < 0 and marky1 < 0:
+			titlecx1 = "x"
+			titlecy1 = "y"
+		else:
+			titlecx1 = str(markx1)
+			titlecy1 = str(marky1)
+
+		if markx2 < 0 and marky2 < 0:
+			titlecx2 = "x"
+			titlecy2 = "y"
+		else:
+			titlecx2 = str(markx2)
+			titlecy2 = str(marky2)
+
 		# overcomplicated title bar
-		title = "%[catscii v" + str(version) + "]=[" +\
-		editmode + "]=[frame " + str(frame+1) + "/" + str(len(frames)) +\
-		"]=[cursor " + str(cursorx+1) + ":" + str(cursory) +\
-		"]=[" + titlechar + "]" #[" + str(round(dt, 4)) + "]"
+		title = "@[catscii v" + str(version) + "][mode " +\
+		editmode + "][frame " + str(frame+1) + "/" + str(len(frames)) +\
+		"][cursor " + str(cursorx+1) + ":" + str(cursory) +\
+		"][marks " + titlecx1 + ":" + titlecy1  + "|" +\
+		titlecx2 + ":" + titlecy2 +\
+		"][" + titlechar + "]"
+
 		title += "=" * (widthChar-len(title))
+
 		buf = printToCanvas(buf, 0, 0, title, widthChar)
 
 		# draw contents
@@ -733,7 +974,7 @@ try:
 
 		# cap framerate
 		if playing:
-			delay = 1/framerate if 1/framerate - dt < 0 else 1/framerate - dt
+			delay = 0 if 1/framerate - dt < 0 else 1/framerate - dt
 			sleep(delay)
 
 #except Exception as exc:
@@ -741,7 +982,7 @@ try:
 finally:
 	# clear the screen one last time
 	# and show cursor again!!!
-	os.write(unit, b"\033[2J\033[?25h")
+	os.write(unit, b"\033[0m\033[2J\033[?25h")
 	# reset terminal back to original attributes
 	termios.tcsetattr(unit, termios.TCSAFLUSH, originalAttributes)
 	print("Bye bye!")

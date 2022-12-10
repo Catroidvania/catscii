@@ -1,4 +1,4 @@
-# catscii v1.3
+# catscii v1.4
 
 a terminal based ascii animation editor i made for fun
 
@@ -50,15 +50,23 @@ ctrl shift right: moves right but faster
 ^v: jump cursor to right edge
 
 
-^y: set first mark
-
-^u: set second mark
+^2: set marks
 
 ^o: copy marked content
 
 ^_: cut marked content
 
 ^p: paste at cursor
+
+^w: draw line between marks
+
+^e: draw ellipse within marks
+
+^r: draw box between marks
+
+^t: draw triangle between marks and cursor
+
+^y: draw curve starting at marks and targeting cursor
 
 
 ^[: go to previous frame
@@ -72,9 +80,9 @@ ctrl shift right: moves right but faster
 ^d: jump to last frame
 
 
-^e: execute command
+^g: execute command
 
-^t: toggle command mode / edit mode
+^f: toggle command mode / edit mode
 
 ### double tap ctrl keys
 
@@ -95,7 +103,7 @@ ctrl shift right: moves right but faster
 
 as of version 1.3 we have copy, cut and paste!
 
-set the first and second marks to specify a region of text (marks will flash)
+set the first and second marks to specify a region of text
 
 note that the while the first and second marks should be at the top left and
 
@@ -110,6 +118,39 @@ between the set marks
 use the paste key to paste the cut/copied content to the cursor location
 
 note that whitespace still gets copied (may be changed in the future)
+
+### drawing primatives
+
+you can also use the marks to draw shapes as of version 1.4
+
+
+##### lines
+
+with the line key you can draw a line between the two marks
+
+##### curves
+
+with the curve key you can draw a bezier curve between the two marks and
+
+using the cursor as the target
+
+##### box
+
+with the box key you can draw a box with the marks as the corners
+
+##### triangle
+
+with the triangle key you can draw a triangle with the marks and the cursor
+
+##### ellipse
+
+with the ellipse key you can draw an ellipse between the marks
+
+##### misc
+
+might add a polygon shape to replace boxes so we cna have rotation
+
+also might add the ability to draw rotated ellipses in the future
 
 ### command mode
 
@@ -145,13 +186,11 @@ yeah theres gonna be more added if i care to work on this project lol
 
 planned happenings:
 
-v1.4 - drawing primatives (line, curve, ox, circle, triangle)
-
 v1.5 - config file (finally!)
 
 v1.6 - cleanup and optimisation (finally!!!1111!!!1!11!)
 
-v1.7 - TBA (possibly undo / redo)
+v1.7 - TBA (possibly undo / redo or onionskin)
 
 might happen (some are proabbly better put in its own program):
 

@@ -247,6 +247,7 @@ def cubicBezierCurve(p1, p2, p3, p4, t):
 	# another helper function for drawing circles because i cannot
 	# figure out how to graph ellipses lmao
 	# not even sure if this is needed
+	# no it isnt but its cool
 	return ((1-t)**3)*p1 + 3*((1-t)**2)*t*p2 + 3*(1-t)*(t**2)*p3 + (t**3)*p4
 
 
@@ -264,9 +265,6 @@ def drawElipse(canvas, x1, y1, x2, y2, prescision=0.01, fillchar="#"):
 	midx = round((max(x1, x2) - min(x1, x2)) / 2 + min(x1, x2))
 	midy = round((max(y1, y2) - min(y1, y2)) / 2 + min(y1, y2))
 
-	# unused for ellipse rotation
-#	a = round((x3 - x1) / 2)
-#	b = round((y3 - y2) / 2)
 
 	while t <= 1:
 
@@ -301,6 +299,53 @@ def drawElipse(canvas, x1, y1, x2, y2, prescision=0.01, fillchar="#"):
 #			(round(cubicBezierCurve(x1, x1, x2, x2, t)),
 #			round(cubicBezierCurve(midy, y2, y2, midy, t))))
 
+		t += prescision
+
+	canvas = drawPoints(canvas, points, fillchar)
+	return canvas
+
+
+# unused :///
+def drawElipse2(canvas, x1, y1, x2, y2, x3, y3, prescision=0.01, fillchar="#"):
+	# draws an ellipse with a set of quadratic bezier curves
+
+	# unsure if needed for ellipses
+	if x1 > x2 :
+		x1,x2 = x2,x1
+		y1,y2 = y2,y1
+
+	points = []
+	t = 0
+	
+	# for drawing with arbitrary rotation
+	xshiftx = round((x1 - x2) / 2)
+	xshifty = round((y1 - y2) / 2)
+	
+	yshiftx = round(x3 - x1 + xshiftx)
+	yshifty = round(y3 - y1 + xshifty)
+
+	x4 = x1 - xshiftx - yshiftx
+	y4 = y1 - xshifty - yshifty
+
+	while t <= 1:	
+		# arbitrary rotation!
+		# top left
+		points.append(
+			(round(quadBezierCurve(x1, x1+yshiftx, x3, t)),
+			round(quadBezierCurve(y1, y1+yshifty, y3, t))))
+		# top right
+		points.append(
+			(round(quadBezierCurve(x3, x2+yshiftx, x2, t)),
+			round(quadBezierCurve(y3, y2+yshifty, y2, t))))
+		# bottom right
+		points.append(
+			(round(quadBezierCurve(x2, x2-yshiftx, x4, t)),
+			round(quadBezierCurve(y2, y2-yshifty, y4, t))))
+		# bottom left
+		points.append(
+			(round(quadBezierCurve(x4, x1-yshiftx, x1, t)),
+			round(quadBezierCurve(y4, y1-yshifty, y1, t))))
+		
 		t += prescision
 
 	canvas = drawPoints(canvas, points, fillchar)
@@ -841,8 +886,8 @@ try:
 		elif char == "^E":
 			if markx1 > -1 and marky1 > -1 and markx2 > -1 and marky2 > -1:
 				fill = frames[frame][cursory-1][cursorx]
-				frames[frame] = drawElipse(frames[frame], markx1, marky1-1,
-				markx2, marky2-1, fillchar=fill)
+				frames[frame] = drawElipse2(frames[frame], markx1, marky1-1,
+				markx2, marky2-1, cursorx, cursory-1, fillchar=fill)
 				markx1 = -1
 				marky1 = -1
 				markx2 = -1

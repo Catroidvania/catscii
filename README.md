@@ -144,13 +144,13 @@ with the triangle key you can draw a triangle with the marks and the cursor
 
 ##### ellipse
 
-with the ellipse key you can draw an ellipse between the marks
+with the ellipse key you can draw an oval with the marks as the side vertices
+
+and the cursor as the top vertice (bottom is mirrored)
 
 ##### misc
 
-might add a polygon shape to replace boxes so we cna have rotation
-
-also might add the ability to draw rotated ellipses in the future
+might add a polygon shape to replace boxes so we can have rotation
 
 ### command mode
 
